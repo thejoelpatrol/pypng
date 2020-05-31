@@ -621,7 +621,7 @@ class Writer:
         # :todo: fix for bitdepth < 8
         self.psize = (self.bitdepth / 8) * self.planes
 
-    def write(self, outfile, rows):
+    def write(self, outfile, rows, rowfilter:int=0):
         """
         Write a PNG image to the output file.
         `rows` should be an iterable that yields each row
@@ -667,13 +667,13 @@ class Writer:
             a = array(fmt, itertools.chain(*check_rows(rows)))
             return self.write_array(outfile, a)
 
-        nrows = self.write_passes(outfile, check_rows(rows))
+        nrows = self.write_passes(outfile, check_rows(rows), rowfilter=rowfilter)
         if nrows != self.height:
             raise ProtocolError(
                 "rows supplied (%d) does not match height (%d)" %
                 (nrows, self.height))
 
-    def write_passes(self, outfile, rows):
+    def write_passes(self, outfile, rows, rowfilter:int = 0):
         """
         Write a PNG image to the output file.
 
@@ -701,9 +701,9 @@ class Writer:
         elif self.bitdepth == 16:
             rows = unpack_rows(rows)
 
-        return self.write_packed(outfile, rows)
+        return self.write_packed(outfile, rows, rowfilter=rowfilter)
 
-    def write_packed(self, outfile, rows):
+    def write_packed(self, outfile, rows, rowfilter:int = 0):
         """
         Write PNG file to `outfile`.
         `rows` should be an iterator that yields each packed row;
@@ -741,7 +741,7 @@ class Writer:
             # that means we could accidentally compute
             # the wrong filtered scanline if we used
             # "up", "average", or "paeth" on such a line.
-            data.append(0)
+            data.append(rowfilter)
             data.extend(row)
             if len(data) > self.chunk_limit:
                 compressed = compressor.compress(data)
@@ -2242,6 +2242,9 @@ def undo_filter_average(filter_unit, scanline, previous, result):
 
 def undo_filter_paeth(filter_unit, scanline, previous, result):
     """Undo Paeth filter."""
+    for i in range(len(result)):
+        result[i] = scanline[i]
+    return
 
     # Also used for ci.
     ai = -filter_unit
