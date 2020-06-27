@@ -647,7 +647,8 @@ class Writer:
             Yield each row in rows,
             but check each row first (for correct width).
             """
-            for i, row in enumerate(rows):
+            for i, _row in enumerate(rows):
+                row = _row[1]
                 try:
                     wrong_length = len(row) != vpr
                 except TypeError:
@@ -660,14 +661,14 @@ class Writer:
                     raise ProtocolError(
                         "Expected %d values but got %d values, in row %d" %
                         (vpr, len(row), i))
-                yield row
+                yield _row
 
         if self.interlace:
             fmt = 'BH'[self.bitdepth > 8]
             a = array(fmt, itertools.chain(*check_rows(rows)))
             return self.write_array(outfile, a)
 
-        nrows = self.write_passes(outfile, check_rows(rows), rowfilter=rowfilter)
+        nrows = self.write_passes(outfile, check_rows(rows))
         if nrows != self.height:
             raise ProtocolError(
                 "rows supplied (%d) does not match height (%d)" %
@@ -701,7 +702,7 @@ class Writer:
         elif self.bitdepth == 16:
             rows = unpack_rows(rows)
 
-        return self.write_packed(outfile, rows, rowfilter=rowfilter)
+        return self.write_packed(outfile, rows)
 
     def write_packed(self, outfile, rows, rowfilter:int = 0):
         """
@@ -733,7 +734,7 @@ class Writer:
         # it's compressed when sufficiently large.
         data = bytearray()
 
-        for i, row in enumerate(rows):
+        for i, _row in enumerate(rows):
             # Add "None" filter type.
             # Currently, it's essential that this filter type be used
             # for every scanline as
@@ -741,7 +742,8 @@ class Writer:
             # that means we could accidentally compute
             # the wrong filtered scanline if we used
             # "up", "average", or "paeth" on such a line.
-            data.append(rowfilter)
+            row = _row[1]
+            data.append(_row[0])
             data.extend(row)
             if len(data) > self.chunk_limit:
                 compressed = compressor.compress(data)
@@ -1426,6 +1428,7 @@ class Reader:
 
         # :todo: Would it be better to update scanline in place?
         result = scanline
+        return result
 
         if filter_type == 0:
             return result
@@ -1519,7 +1522,7 @@ class Reader:
         """
 
         for row in byte_rows:
-            yield self._bytes_to_values(row)
+            yield row[0], self._bytes_to_values(row[1])
 
     def _bytes_to_values(self, bs, width=None):
         """Convert a packed row of bytes into a row of values.
@@ -1567,7 +1570,7 @@ class Reader:
                 scanline = a[1: rb + 1]
                 del a[: rb + 1]
                 recon = self.undo_filter(filter_type, scanline, recon)
-                yield recon
+                yield (filter_type, recon)
         if len(a) != 0:
             # :file:format We get here with a file format error:
             # when the available bytes (after decompressing) do not
@@ -2242,9 +2245,9 @@ def undo_filter_average(filter_unit, scanline, previous, result):
 
 def undo_filter_paeth(filter_unit, scanline, previous, result):
     """Undo Paeth filter."""
-    for i in range(len(result)):
-        result[i] = scanline[i]
-    return
+    #for i in range(len(result)):
+    #    result[i] = scanline[i]
+    #return
 
     # Also used for ci.
     ai = -filter_unit

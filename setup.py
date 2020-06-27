@@ -24,7 +24,7 @@ def get_version():
 
 
 conf = dict(
-    name='pypng',
+    name='pypnglitch',
     version=get_version(),
     description='Pure Python PNG image encoder/decoder',
     long_description="""
