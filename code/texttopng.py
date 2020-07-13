@@ -4,12 +4,16 @@
 # texttopng
 
 # Example (all ASCII glyphs):
-#
-# printf $(printf '\\%s' $(seq 40 176 | grep -v '[89]')) |
-#   fold -w 32 |
-#   ./texttopng > ascii.png
+"""
+printf $(printf '\\%s' $(seq 40 176 | grep -v '[89]')) |
+  fold -w 32 |
+  python3 texttopng.py > ascii.png
+"""
 
+import binascii
 import itertools
+
+import png
 
 
 def usage(fil):
@@ -117,22 +121,24 @@ font = {
 
 def char(i):
     """Get image data for the character `i` (a one character string).
-    Returned as a list of rows.  Each row is a tuple containing the
-    packed pixels.
+    Returned as a list of rows.
+    Each row is a tuple containing the packed pixels.
     """
 
     i = ord(i)
     if i not in font:
         return [(0,)] * 8
-    return [(ord(row),) for row in font[i].decode('hex')]
+    return [(row,) for row in binascii.unhexlify(font[i])]
 
 
 def texttoraster(m):
-    """Convert the string *m* to a raster image. Any newlines
-    in *m* will cause more than one line of output. The
-    resulting raster will be taller. Prior to rendering each
-    line, it is padded on the right with enough spaces to make
-    all lines the same length.
+    """
+    Convert the string *m* to a raster image.
+    Any newlines in *m* will cause more than one line of output.
+    The resulting raster will be taller.
+    Prior to rendering each line,
+    it is padded on the right with
+    enough spaces to make all lines the same length.
     """
 
     lines = m.split('\n')
@@ -146,7 +152,8 @@ def texttoraster(m):
 
 
 def linetoraster(m):
-    """Convert a single line of text *m* to a raster image,
+    """
+    Convert a single line of text *m* to a raster image,
     by rendering it using the font in *font*.
 
     A triple of (*width*, *height*, *pixels*) is returned;
@@ -160,8 +167,6 @@ def linetoraster(m):
 
 
 def render(message, out):
-    import png
-
     x, y, pixels = texttoraster(message)
     w = png.Writer(x, y, greyscale=True, bitdepth=1)
     w.write_packed(out, pixels)
@@ -188,14 +193,7 @@ def main(argv=None):
         out = open("%s.png" % message, 'wb')
     else:
         message = sys.stdin.read()
-        out = sys.stdout
-        # on Windows it is necessary to switch stdout to binary mode
-        # to avoid \n translation
-        # http://stackoverflow.com/questions/2374427/python-2-x-write-binary-output-to-stdout
-        if sys.platform == "win32":
-            import msvcrt
-            import os
-            msvcrt.setmode(sys.stdout.fileno(), os.O_BINARY)
+        out = png.binary_stdout()
 
     render(message, out)
 

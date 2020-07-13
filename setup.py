@@ -39,6 +39,7 @@ https://pypng.readthedocs.io/en/latest/
     author='David Jones',
     author_email='drj@pobox.com',
     url='https://github.com/drj11/pypng',
+    license='MIT',
     package_dir={'': 'code'},
     py_modules=['png', 'test_png', 'pngsuite'],
     scripts=[
@@ -56,7 +57,6 @@ https://pypng.readthedocs.io/en/latest/
       'Topic :: Software Development :: Libraries :: Python Modules',
       'Programming Language :: Python',
       'Programming Language :: Python :: 3',
-      'Programming Language :: Python :: 3.4',
       'Programming Language :: Python :: 3.5',
       'Programming Language :: Python :: 3.6',
       'Programming Language :: Python :: 3.7',
